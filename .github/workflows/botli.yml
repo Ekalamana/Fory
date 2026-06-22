@@ -77,7 +77,7 @@ jobs:
         run: |
           echo "Installing Stockfish 18"
           mkdir -p engines
-          curl -L -o sf18.tar https://github.com/official-stockfish/Stockfish/releases/download/sf_18/stockfish-ubuntu-x86-64-avx2.tar
+          curl -L -o sf18.tar https://github.com
           tar -xf sf18.tar
           mv stockfish/stockfish-ubuntu-x86-64-avx2 engines/sf
           chmod +x engines/sf
@@ -92,12 +92,12 @@ jobs:
           mkdir -p engines
           RUN_ID=$(curl -s -H "Accept: application/vnd.github+json" \
             -H "Authorization: Bearer $GH_TOKEN" \
-            https://api.github.com/repos/fairy-stockfish/Fairy-Stockfish/actions/workflows/release.yml/runs?per_page=1\&branch=master\&status=success \
+            https://github.com\&branch=master\&status=success \
             | jq -r '.workflow_runs[0].id')
 
           ARTIFACT_URL=$(curl -s -H "Accept: application/vnd.github+json" \
             -H "Authorization: Bearer $GH_TOKEN" \
-            https://api.github.com/repos/fairy-stockfish/Fairy-Stockfish/actions/runs/$RUN_ID/artifacts \
+            https://github.com \
 
             | jq -r '.artifacts[] | select(.name | contains("linux-x86-64-modern")) | .archive_download_url')
 
@@ -112,7 +112,6 @@ jobs:
       - name: Cancel previous runs
         run: |
           CURRENT_RUN_ID=${{ github.run_id }}
-          # Фильтр изменен строго на имя этого воркфлоу "Run botli"
           RUNS=$(gh run list --workflow "Run botli" --status in_progress --json databaseId --jq ".[].databaseId" | grep -v "$CURRENT_RUN_ID" || true)
           for RUN_ID in $RUNS; do
             echo "Canceling previous run: $RUN_ID"
