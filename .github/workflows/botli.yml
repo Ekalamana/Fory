@@ -36,6 +36,7 @@ on:
   schedule:
     - cron: "0 */2 * * *"
 
+# Права доступа для встроенного GITHUB_TOKEN
 permissions:
   actions: write
   contents: read
@@ -90,16 +91,17 @@ jobs:
           echo "Installing Fairy-Stockfish"
           mkdir -p engines
           RUN_ID=$(curl -s -H "Accept: application/vnd.github+json" \
-            -H "Authorization: token $GH_TOKEN" \
+            -H "Authorization: Bearer $GH_TOKEN" \
             https://api.github.com/repos/fairy-stockfish/Fairy-Stockfish/actions/workflows/release.yml/runs?per_page=1\&branch=master\&status=success \
             | jq -r '.workflow_runs[0].id')
 
           ARTIFACT_URL=$(curl -s -H "Accept: application/vnd.github+json" \
-            -H "Authorization: token $GH_TOKEN" \
+            -H "Authorization: Bearer $GH_TOKEN" \
             https://api.github.com/repos/fairy-stockfish/Fairy-Stockfish/actions/runs/$RUN_ID/artifacts \
+
             | jq -r '.artifacts[] | select(.name | contains("linux-x86-64-modern")) | .archive_download_url')
 
-          curl -L -H "Authorization: token $GH_TOKEN" -o fsf.zip "$ARTIFACT_URL"
+          curl -L -H "Authorization: Bearer $GH_TOKEN" -o fsf.zip "$ARTIFACT_URL"
           unzip -o fsf.zip -d engines
           mv engines/fairy-stockfish_x86-64-modern engines/fsf
           chmod +x engines/fsf
@@ -107,16 +109,13 @@ jobs:
       - name: Inject Secret Token
         run: sed -i "s/TokenTimeIsBackBuddyss/${{ secrets.LICHESS_KEY }}/g" config.yml
 
-      - name: Install GitHub CLI
-        run: |
-          sudo apt update
-          sudo apt install gh -y
-
       - name: Cancel previous runs
         run: |
           CURRENT_RUN_ID=${{ github.run_id }}
+          # Фильтр изменен строго на имя этого воркфлоу "Run botli"
           RUNS=$(gh run list --workflow "Run botli" --status in_progress --json databaseId --jq ".[].databaseId" | grep -v "$CURRENT_RUN_ID" || true)
           for RUN_ID in $RUNS; do
+            echo "Canceling previous run: $RUN_ID"
             gh run cancel "$RUN_ID"
           done
         env:
@@ -144,6 +143,9 @@ jobs:
             python3 -u user_interface.py stop
           fi
 
+          # Ожидание 350 минут до принудительной остановки
           sleep 21000
+          echo "Time limit reached. Stopping bot process..."
           kill -SIGTERM $BOT_PID || true
           wait $BOT_PID
+          echo "Bot stopped cleanly."
