@@ -100,52 +100,7 @@ jobs:
           ./engines/sf bench 1
 
            # =========================
-      # FAIRY-STOCKFISH
-      # =========================
-      - name: Install Fairy-Stockfish
-        run: |
-          set -e
-
-          echo "Installing Fairy-Stockfish..."
-          mkdir -p engines
-
-          RUN_ID=$(curl -s \
-            -H "Accept: application/vnd.github+json" \
-            -H "Authorization: Bearer $GH_TOKEN" \
-            "https://api.github.com/repos/fairy-stockfish/Fairy-Stockfish/actions/runs?branch=master&status=success" \
-            | jq -r '.workflow_runs[0].id')
-
-          echo "Workflow Run ID: $RUN_ID"
-
-          ARTIFACT_URL=$(curl -s \
-            -H "Accept: application/vnd.github+json" \
-            -H "Authorization: Bearer $GH_TOKEN" \
-            "https://api.github.com/repos/fairy-stockfish/Fairy-Stockfish/actions/runs/$RUN_ID/artifacts" \
-            | jq -r '.artifacts[] | select(.name | contains("linux-x86-64-modern")) | .archive_download_url' \
-            | head -n 1)
-
-          if [ -z "$ARTIFACT_URL" ] || [ "$ARTIFACT_URL" = "null" ]; then
-            echo "ERROR: Fairy-Stockfish artifact not found."
-            exit 1
-          fi
-
-          echo "Downloading Fairy-Stockfish..."
-
-          curl -L \
-            -H "Authorization: Bearer $GH_TOKEN" \
-            "$ARTIFACT_URL" \
-            -o fsf.zip
-
-          unzip -t fsf.zip
-
-          unzip -o fsf.zip -d engines
-
-          chmod +x engines/fairy-stockfish_x86-64-modern
-
-          mv engines/fairy-stockfish_x86-64-modern engines/fsf
-
-          echo "Installed Fairy-Stockfish:"
-          ./engines/fsf --version || true
+      
 
       - name: Inject Secret Token
         run: sed -i "s/TokenTimeIsBackBuddyss/${{ secrets.LICHESS_KEY }}/g" config.yml
